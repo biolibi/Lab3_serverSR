@@ -16,8 +16,24 @@
 
 #pragma comment(lib,"ws2_32")
 
-using namespace std;
+using namespace std; 
+// pour recupérer l'information obtenus grace a la commande executé, nous avons utiliser une fonction sur internet qui crée un fichier temporaire 
+// dont la console (qui execute la commande) écris a l'intérieur le resultat (ce qui est retourner)
+// nous avons trouver sur ce site:
+//https://rosettacode.org/wiki/Get_system_command_output
 
+
+string execute(const string& command,int &value) {
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+    value=system((command + " > temp.txt").c_str());
+    ifstream ifs("temp.txt");
+    string ret{ istreambuf_iterator<char>(ifs), istreambuf_iterator<char>() };
+    ifs.close(); // must close the inout stream so the file can be cleaned up
+    if (remove("temp.txt") != 0) {
+        perror("Error deleting temporary file");
+    }
+    return ret;
+}
 
 int main()
 {
@@ -26,7 +42,7 @@ int main()
 
   
     
-
+    // sert à renouveler le serveur entre les différentes connection de client(après une deconnection)
     while (true)
     {
 
@@ -148,29 +164,45 @@ int main()
             
             vector<string> listeFichierPath;
             vector<string> listeFichierFormatter;
+            string nomCommande;
             // cas 1
+
             string tempoChoix(recvBuffer, strlen(recvBuffer));
+
+            
+            // ici on recupere la commande qui a été envoyer au cas ou ce qui est recu est l'envoie d'une commande
+            nomCommande = tempoChoix.substr(tempoChoix.find_first_of("&&")+2);
+
             tempoChoix = tempoChoix.substr(0, tempoChoix.find_first_of("&&"));
+
+            stringstream directoryPath;
+            //string directory ={filesystem::current_path()};
+
+
+            // ici ajouter un path dynamique en envoyant une commande de la part du client
+            //
+            //
+            //
+            directoryPath << filesystem::current_path().u8string() << "\\Fichier";
+
+            // cout << directoryPath.str() << "\n";
+
+             // Pour récupérer la liste des fichiers, j'ai utiliser filesystem (version c++17)
+             // solution prise sur stackoverflow proposer par Shreevardhan : https://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c/37494654#37494654
+             // en utilisant filesystem depuis c++17
+            int i = 0;
+            int j = 0;
+            // utilisation de deux boucle for pour connaître le nombre de packet à envoyé, comme sa le client s'attend à recevoir 8 nom de dossier s'il y en a 8
+            //vraiment pas optimiser, mais c'était la premiere solution qui m'est venu pour
+            //connaître le nombre de packet qui va être envoyer au client
+            //comme sa si il y a une interruption le client pourra communiquer lui qu'il a raté
+            for (const auto& entry : filesystem::directory_iterator(directoryPath.str()))
+                i++;
+
+
             if (tempoChoix == "1")
             {
-                stringstream directoryPath;
-                //string directory ={filesystem::current_path()};
-
-                directoryPath << filesystem::current_path().u8string() << "\\Fichier";
-
-               // cout << directoryPath.str() << "\n";
-
-                // Pour récupérer la liste des fichiers, j'ai utiliser filesystem (version c++17)
-                // solution prise sur stackoverflow proposer par Shreevardhan : https://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c/37494654#37494654
-                // en utilisant filesystem depuis c++17
-                int i = 0;
-                int j = 0;
-                // utilisation de deux boucle for pour connaître le nombre de packet à envoyé, comme sa le client s'attend à recevoir 8 nom de dossier s'il y en a 8
-                //vraiment pas optimiser, mais c'était la premiere solution qui m'est venu pour
-                //connaître le nombre de packet qui va être envoyer au client
-                //comme sa si il y a une interruption le client pourra communiquer lui qu'il a raté
-                for (const auto & entry : filesystem::directory_iterator(directoryPath.str()))
-                    i++;
+              
                 
                 //envoie le nombre de packet
                 string tempo1 = to_string(i) + "&&";
@@ -239,13 +271,100 @@ int main()
                // memset(sendBuffer, 0, sizeof sendBuffer);
 
             }
+
             if (tempoChoix == "2")
             {
-                authentifier == false;
-                break;
-            }
+                int valueSysteme;
+                string messageErreurCommande;
+                stringstream tempomessage;
+
+
+            // lorsqu'on exécute system, il en retourne si:fhfdghgddsfsfsdfs
+            //0 si c'est correct
+            //1 si la commande est invalide, peut être manque argument
+            //2 si la commande est valide, pas exécutée
+                //
+                string RésultatCommande;
+               // nomCommande;
+
+                RésultatCommande=execute(nomCommande,valueSysteme);
+
+                cout << RésultatCommande << "\n";
+
+
+                if (valueSysteme == 0 )
+                {
+
+                    tempomessage << "La commande a ete execute en voici le resultat\n" << RésultatCommande;
+
+                    messageErreurCommande = tempomessage.str();
+
+                    // envoie de la taille du messsage de la commande
+                    send(clientSocket, to_string(messageErreurCommande.size()).c_str(), 512, 0);
+
+
+                    cout << messageErreurCommande.size() << "\n";
+
+                    
+
+
+                    // envoie du message de la commande
+
+                    send(clientSocket, messageErreurCommande.c_str(), messageErreurCommande.size(), 0);
+
+                }
+                else if (valueSysteme == 1)
+                {
+                    messageErreurCommande = "Il y a eu une erreur, commande invalide ou argument manquant";
+                 
+                    // envoie de la taille du messsage de la commande
+                    send(clientSocket, to_string(messageErreurCommande.size()).c_str(), 512, 0);
+
+
+                    // envoie du message de la commande
+                    send(clientSocket, messageErreurCommande.c_str(), messageErreurCommande.size(), 0);
+                }
+                else if (valueSysteme)
+                {
+                    messageErreurCommande = "Commande entree non valide";
+                    send(clientSocket, to_string(messageErreurCommande.size()).c_str(), 512, 0);
+
+
+                    // envoie du message de la commande
+                    send(clientSocket, messageErreurCommande.c_str(), messageErreurCommande.size(), 0);
+                }
+
+                else
+                {
+                    messageErreurCommande = "Erreur inconnue, non pris en charge";
+
+                    send(clientSocket, to_string(messageErreurCommande.size()).c_str(), 512, 0);
+
+
+                    // envoie du message de la commande
+                    send(clientSocket, messageErreurCommande.c_str(), messageErreurCommande.size(), 0);
+                }
+
+
+
+                // pour recupérer l'information obtenus grace a la commande executé, nous avons utiliser une fonction sur internet qui crée un fichier temporaire 
+                // dont la console (qui execute la commande) écris a l'intérieur le resultat (ce qui est retourner)
+                // nous avons trouver sur ce site:
+                //https://rosettacode.org/wiki/Get_system_command_output
+
+
+
+           
 
         }
+        if (tempoChoix == "3")
+        {
+                authentifier == false;
+                break;
+        }
+
+
+    }
         memset(recvBuffer, 0, sizeof recvBuffer);
 
     } while (true);
