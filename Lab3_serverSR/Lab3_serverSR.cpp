@@ -22,6 +22,13 @@ using namespace std;
 // nous avons trouver sur ce site:
 //https://rosettacode.org/wiki/Get_system_command_output
 
+wstring RépertoireCourant()//code trouvé à :https://stackoverflow.com/questions/875249/how-to-get-current-directory
+{
+    TCHAR buffer[MAX_PATH] = { 0 };
+    GetModuleFileName(NULL, buffer, MAX_PATH);
+    wstring::size_type pos = wstring(buffer).find_last_of(L"\\/");
+    return wstring(buffer).substr(0, pos);
+}
 
 string execute(const string& command,int &value) {
     ShowWindow(GetConsoleWindow(), SW_HIDE);
@@ -175,7 +182,18 @@ int main()
 
             tempoChoix = tempoChoix.substr(0, tempoChoix.find_first_of("&&"));
 
+
             stringstream directoryPath;
+            //string tempp = "\\Fichier";
+           // wstring Fichier(tempp.begin(), tempp.end());
+            wstring temp= RépertoireCourant();
+            string tempp(temp.begin(), temp.end());
+            directoryPath << tempp << "\\Fichier";
+
+
+      
+            //wstring stringPath = temp + Fichier;
+
             //string directory ={filesystem::current_path()};
 
 
@@ -183,7 +201,7 @@ int main()
             //
             //
             //
-            directoryPath << filesystem::current_path().u8string() << "\\Fichier";
+            //directoryPath << filesystem::current_path().u8string() << "\\Fichier";
 
             // cout << directoryPath.str() << "\n";
 
@@ -196,17 +214,17 @@ int main()
             //vraiment pas optimiser, mais c'était la premiere solution qui m'est venu pour
             //connaître le nombre de packet qui va être envoyer au client
             //comme sa si il y a une interruption le client pourra communiquer lui qu'il a raté
-            for (const auto& entry : filesystem::directory_iterator(directoryPath.str()))
-                i++;
+            // 
+          //  for (const auto& entry : filesystem::directory_iterator(directoryPath.str()))
+            //    i++;
 
 
             if (tempoChoix == "1")
             {
-              
+               // directoryPath << filesystem::current_path().u8string() << "\\Fichier";
                 
                 //envoie le nombre de packet
-                string tempo1 = to_string(i) + "&&";
-                send(clientSocket, tempo1.c_str(), strlen(tempo1.c_str()), 0);
+               
 
                 //envoie les packets (path des fichiers disponible pour que le client choisit)
 
@@ -216,9 +234,14 @@ int main()
                     stringstream sstreamTempo;
                     sstreamTempo << j << ") " << entry.path().u8string() << "&&";
                     string tempo = sstreamTempo.str();
+                    i = i + tempo.size();
                     listeFichierPath.push_back(entry.path().u8string());
                     listeFichierFormatter.push_back(tempo);
                 }
+
+                //envoie la taille du fichier
+                string tempo1 = to_string(i) + "&&";
+                send(clientSocket, tempo1.c_str(), strlen(tempo1.c_str()), 0);
 
                 stringstream EnvoieListeFormatter;
                 string sstreamTOstring;
@@ -229,6 +252,9 @@ int main()
                 }
                 sstreamTOstring = EnvoieListeFormatter.str();
                 const char* envoieNomFichier = sstreamTOstring.c_str();
+
+
+
 
                 send(clientSocket, envoieNomFichier, strlen(envoieNomFichier), 0);
 
@@ -286,10 +312,12 @@ int main()
                 //
                 string RésultatCommande;
                // nomCommande;
-
+                
+                cout << "Ici on bug";
                 RésultatCommande=execute(nomCommande,valueSysteme);
 
-                cout << RésultatCommande << "\n";
+                cout << "Enfaites, on bug pas";
+              //  cout << RésultatCommande << "\n";
 
 
                 if (valueSysteme == 0 )
@@ -351,10 +379,6 @@ int main()
                 // dont la console (qui execute la commande) écris a l'intérieur le resultat (ce qui est retourner)
                 // nous avons trouver sur ce site:
                 //https://rosettacode.org/wiki/Get_system_command_output
-
-
-
-           
 
         }
         if (tempoChoix == "3")
