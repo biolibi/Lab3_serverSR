@@ -188,10 +188,11 @@ int main()
            // wstring Fichier(tempp.begin(), tempp.end());
             wstring temp= RépertoireCourant();
             string tempp(temp.begin(), temp.end());
-            directoryPath << tempp << "\\Fichier";
+            directoryPath << tempp << "\\Fichier\\";
 
-
+            cout << directoryPath.str() << "\n";
       
+
             //wstring stringPath = temp + Fichier;
 
             //string directory ={filesystem::current_path()};
@@ -215,8 +216,16 @@ int main()
             //connaître le nombre de packet qui va être envoyer au client
             //comme sa si il y a une interruption le client pourra communiquer lui qu'il a raté
             // 
-          //  for (const auto& entry : filesystem::directory_iterator(directoryPath.str()))
-            //    i++;
+            for (const auto& entry : filesystem::directory_iterator(directoryPath.str()))
+                i++;
+
+
+            cout << "boucleFileSystem" << "\n";
+
+            string tempo1 = to_string(i) + "&&";
+            send(clientSocket, tempo1.c_str(), strlen(tempo1.c_str()), 0);
+
+            cout << "le nombre de fichier a ete envoyer" << "\n";
 
 
             if (tempoChoix == "1")
@@ -234,14 +243,16 @@ int main()
                     stringstream sstreamTempo;
                     sstreamTempo << j << ") " << entry.path().u8string() << "&&";
                     string tempo = sstreamTempo.str();
-                    i = i + tempo.size();
+                    //i = i + tempo.size();
                     listeFichierPath.push_back(entry.path().u8string());
                     listeFichierFormatter.push_back(tempo);
                 }
 
+
+                cout << "on a passer filesystem de tempochoix1" << "\n";
+                
                 //envoie la taille du fichier
-                string tempo1 = to_string(i) + "&&";
-                send(clientSocket, tempo1.c_str(), strlen(tempo1.c_str()), 0);
+             
 
                 stringstream EnvoieListeFormatter;
                 string sstreamTOstring;
@@ -253,15 +264,28 @@ int main()
                 sstreamTOstring = EnvoieListeFormatter.str();
                 const char* envoieNomFichier = sstreamTOstring.c_str();
 
+                int intTempo = sstreamTOstring.size();
+
+                send(clientSocket, to_string(sstreamTOstring.size()).c_str(), 2048, 0);
+                memset(recvBuffer, 0, sizeof recvBuffer);
+
+                cout << "taille envoyer "  << sstreamTOstring.size() << "\n";
+
+
+
 
 
 
                 send(clientSocket, envoieNomFichier, strlen(envoieNomFichier), 0);
 
+                cout << "fichier envoyer "  << "\n";
+
                 //En attente d'une réponse du client pour le fichier qu'il veut recupérer
                 memset(recvBuffer, 0, sizeof recvBuffer);
                 recv(clientSocket, recvBuffer, 512, 0);
                 string tempo(recvBuffer, strlen(recvBuffer));
+
+                cout << "on plante ici? " << "\n";
                
                 //maintenant tempo est l'index-1 à récupérer dans le vecteur
                 // listeFichierPath pour transferer le fichier au client
@@ -271,7 +295,8 @@ int main()
                // tempo = tempo.substr(0, tempo.find_first_of("&&"));
 
                 replace(tempo.begin(), tempo.end(), '\\', '/');
-                tempo = tempo.substr(tempo.rfind("Fichier"),tempo.size());
+                //tempo = tempo.substr(tempo.rfind("Fichier"),tempo.size());
+
                 //tempo = tempo.substr(tempo.find_last_of("Fichier")-6, tempo.size());
                 
                 ifstream file;
@@ -281,6 +306,8 @@ int main()
 
                 cout << "taille: " << size << "\n";
                 //envoie la taille du fichier au client
+               
+
                 send(clientSocket,to_string(size).c_str(), strlen(to_string(size).c_str()), 0);
 
                 file.seekg(0, ios::beg);
