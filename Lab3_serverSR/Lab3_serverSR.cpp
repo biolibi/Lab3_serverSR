@@ -13,6 +13,7 @@
 #include <sstream>
 #include <filesystem>
 #include <fstream>
+#include <stdexcept>
 
 #pragma comment(lib,"ws2_32")
 
@@ -30,17 +31,24 @@ wstring RépertoireCourant()//code trouvé à :https://stackoverflow.com/questions/
     return wstring(buffer).substr(0, pos);
 }
 
-string execute(const string& command,int &value) {
-    ShowWindow(GetConsoleWindow(), SW_HIDE);
-    value=system((command + " > temp.txt").c_str());
-    ifstream ifs("temp.txt");
-    string ret{ istreambuf_iterator<char>(ifs), istreambuf_iterator<char>() };
+
+
+
+
+
+string execute(const string& command, int &value) {
+ 
+    value = system((command + " > temp1.txt").c_str());
+
+    ifstream ifs("temp1.txt");
+    string ret{istreambuf_iterator<char>(ifs), istreambuf_iterator<char>() };
     ifs.close(); // must close the inout stream so the file can be cleaned up
-    if (remove("temp.txt") != 0) {
+    if (remove("temp1.txt") != 0) {
         perror("Error deleting temporary file");
     }
     return ret;
 }
+
 
 int main()
 {
@@ -370,7 +378,7 @@ int main()
                 nomCommande = commandeRecu;
 
 
-                int valueSysteme;
+                int valueSysteme = 3;
                 string messageErreurCommande;
                 stringstream tempomessage;
 
@@ -384,6 +392,11 @@ int main()
                // nomCommande;
                 
                 cout << "Ici on bug";
+
+               // wstring path = RépertoireCourant();
+              //  string pathExe(path.begin(), path.end());
+                // pathExe = pathExe +">" + nomCommande;
+
                 RésultatCommande=execute(nomCommande,valueSysteme);
 
                 cout << "Enfaites, on bug pas";
