@@ -167,7 +167,7 @@ int main()
         }
 
         if (authentifier == true) {
-            recv(clientSocket, recvBuffer, 512, 0);
+            recv(clientSocket, recvBuffer, 3, 0);
             
             vector<string> listeFichierPath;
             vector<string> listeFichierFormatter;
@@ -178,7 +178,7 @@ int main()
 
             
             // ici on recupere la commande qui a été envoyer au cas ou ce qui est recu est l'envoie d'une commande
-            nomCommande = tempoChoix.substr(tempoChoix.find_first_of("&&")+2);
+          
 
             tempoChoix = tempoChoix.substr(0, tempoChoix.find_first_of("&&"));
 
@@ -188,7 +188,7 @@ int main()
            // wstring Fichier(tempp.begin(), tempp.end());
             wstring temp= RépertoireCourant();
             string tempp(temp.begin(), temp.end());
-            directoryPath << tempp << "\\Fichier\\";
+            directoryPath << tempp << "\\Fichier";
 
             cout << directoryPath.str() << "\n";
       
@@ -223,9 +223,10 @@ int main()
             cout << "boucleFileSystem" << "\n";
 
             string tempo1 = to_string(i) + "&&";
-            send(clientSocket, tempo1.c_str(), strlen(tempo1.c_str()), 0);
 
-            cout << "le nombre de fichier a ete envoyer" << "\n";
+            send(clientSocket, tempo1.c_str(), 512, 0);
+
+            cout << tempo1 << "\n";
 
 
             if (tempoChoix == "1")
@@ -266,7 +267,22 @@ int main()
 
                 int intTempo = sstreamTOstring.size();
 
-                send(clientSocket, to_string(sstreamTOstring.size()).c_str(), 2048, 0);
+                cout << to_string(sstreamTOstring.size()).c_str();
+
+                try
+                {
+                    send(clientSocket, to_string(sstreamTOstring.size()).c_str(), 512, 0);
+                    int test =WSAGetLastError();
+                    cout << test;
+                }
+
+                catch (const std::exception& e) // reference to the base of a polymorphic object
+                {
+                    std::cout << e.what(); // information from length_error printed
+                }
+
+
+                //send(clientSocket, to_string(sstreamTOstring.size()).c_str(), 512, 0);
                 memset(recvBuffer, 0, sizeof recvBuffer);
 
                 cout << "taille envoyer "  << sstreamTOstring.size() << "\n";
@@ -275,8 +291,12 @@ int main()
 
 
 
+                // envoie des fichiers
 
-                send(clientSocket, envoieNomFichier, strlen(envoieNomFichier), 0);
+                cout << envoieNomFichier << "\n";
+
+
+                send(clientSocket, envoieNomFichier,sstreamTOstring.size(), 0);
 
                 cout << "fichier envoyer "  << "\n";
 
@@ -327,6 +347,29 @@ int main()
 
             if (tempoChoix == "2")
             {
+                // on recoit la taille de la commande qui sera envoyer
+                int tailleCommande;
+                recv(clientSocket, (char*)&tailleCommande, 512, 0);
+
+                //string tailleCommande(recvBuffer, sizeof recvBuffer);
+
+                memset(recvBuffer, 0, sizeof recvBuffer);
+
+
+                // ici on recoit la commande de taille qui a été recu précédament
+                recv(clientSocket, recvBuffer,tailleCommande, 0);
+               
+
+                //                string commandeRecu = "";
+
+            
+                string commandeRecu(recvBuffer, sizeof recvBuffer);
+
+                memset(recvBuffer, 0, sizeof recvBuffer);
+
+                nomCommande = commandeRecu;
+
+
                 int valueSysteme;
                 string messageErreurCommande;
                 stringstream tempomessage;
